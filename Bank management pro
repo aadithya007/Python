@@ -1,0 +1,227 @@
+from tkinter import * 
+from tkinter import messagebox 
+from tkinter import ttk 
+from tkinter import Tk 
+import tkinter as tk 
+import random 
+import mysql.connector as c 
+con = c.connect(user = "root", host = "localhost", passwd = "admin") 
+cur = con.cursor() 
+cmd = "create database if not exists bank" 
+cur.execute(cmd) 
+con.commit() 
+cur.execute("use bank") 
+ls = ["create table if not exists user(user_name varchar(100), account_number int(100), password varchar(100), 
+account_type varchar(100))", 
+ "create table if not exists account_data(account_number int(100), money int(200), account_type 
+varchar(100))"] 
+for i in ls: 
+ cur.execute(i) 
+ con.commit() 
+def new_user(): 
+ window2 = Tk() 
+ window2.geometry("900x700") 
+ l1 = tk.Label(window2, text = "User Name", width = 30, font = "bold") 
+ l1.grid(row= 1 , column =1) 
+ e1 = tk.Entry(window2, width = 30, font = "bold") 
+10 
+ e1.grid(row =1 , column = 3) 
+ l2 = tk.Label(window2, text = "password", width = 30, font = "bold") 
+ l2.grid(row = 3, column = 1) 
+ e2 = tk.Entry(window2, width = 30, font = "bold") 
+ e2.grid(row = 3, column = 3) 
+ l3 = tk.Label(window2, text = "Account Type", width = 30, font = "bold") 
+ l3.grid(row = 5, column = 1) 
+ ls1 = ["Savings","Salary"] 
+ acc_type = StringVar(window2) 
+ acc_type.set("Savings") 
+ drop = OptionMenu(window2, acc_type, *ls1) 
+ drop.grid(row = 5, column = 3) 
+ b1 = tk.Button(window2, text ="SIGN IN", command = lambda: sign_in(e1,e2,acc_type)) 
+ b1.grid(row = 7 ,column = 2) 
+ window2.mainloop() 
+def sign_in(e1,e2,acc_type): 
+ try: 
+ 
+ user_name = e1.get() 
+ password = e2.get() 
+ acc_type = acc_type.get() 
+ acc_num = account_number() 
+ cmd = "insert into user values('{}',{},'{}','{}')".format(user_name,acc_num,password,acc_type) 
+ cur.execute(cmd) 
+ cmd2 = "insert into account_data values({},0,'{}')".format(acc_num,acc_type) 
+ cur.execute(cmd2) 
+ con.commit() 
+ msg = "Your Account Has been created... Your Account Number is {}".format(acc_num) 
+ messagebox.showinfo("Success",msg) 
+ messagebox.showinfo("Redirecting....","Redirecting you to the Login Page") 
+ 
+ login() 
+ except Exception as e: 
+ messagebox.showerror("Error","We ran down an Error --> " +str(e)+ " Please Try Again...") 
+def account_number(): 
+ while True: 
+ num = random.randint(0,99999) 
+ cmd = "select account_number from user" 
+ cur.execute(cmd) 
+ data = [] 
+ for i in cur: 
+ data.append(cur.fetchone()) 
+ if num not in data: 
+11 
+ break 
+ else: 
+ pass 
+ return num 
+ 
+def login(): 
+ window3 = Tk() 
+ window3.geometry("900x500") 
+ l1 = tk.Label(window3, text = "Account Number", width = 30 , font = "bold") 
+ l1.grid(row = 1 , column = 1) 
+ e1 = tk.Entry(window3, width = 30, font = "bold") 
+ e1.grid(row = 1 , column = 3) 
+ l2 = tk.Label(window3, text = "Password", width = 30, font = "bold") 
+ l2.grid(row = 3, column = 1) 
+ e2 = tk.Entry(window3, width = 30, font = "bold") 
+ e2.grid(row = 3, column = 3) 
+ b1 = tk.Button(window3, text = "Login", command = lambda: login_page(e1,e2)) 
+ b1.grid(row = 5, column = 2) 
+ window3.mainloop() 
+def login_page(e1,e2): 
+ try: 
+ account_number = int(e1.get()) 
+ password = e2.get() 
+ cmd = "select password from user where account_number = {}".format(account_number) 
+ cur.execute(cmd) 
+ data = cur.fetchone() 
+ check_password = data[0] 
+ if check_password == password : 
+ messagebox.showinfo("Redirecting...","Login Succesfull.... Redirecting to Account Page") 
+ login_main_page(account_number) 
+ else: 
+ messagebox.showerror("ERROR 404","Account details doesn't match... Please try again") 
+ except Exception as e: 
+ messagebox.showerror("Error","We ran down an Error --> " +str(e) + " Please Try Again...") 
+def login_main_page(account_number): 
+ cmd = "select user_name from user where account_number = {}".format(account_number) 
+ cur.execute(cmd) 
+ data = cur.fetchone() 
+ msg1 = "Welcome " + str(data[0]) 
+ window4 = Tk() 
+ window4.geometry("500x500") 
+ l1 = tk.Label(window4, text = msg1, width = 30, font ="bold") 
+ l1.pack() 
+ b1 = tk.Button(window4, text = "ADD MONEY", width = 30, font = "bold", command = lambda: 
+add_money(account_number)) 
+ b1.pack() 
+12 
+ b2 = tk.Button(window4, text = "WITHDRAW MONEY", width =30, font = "bold", command = lambda : 
+withdraw_money(account_number)) 
+ b2.pack() 
+ b3 = tk.Button(window4, text = "CHECK BALANCE", width = 30, font = "bold", command = lambda : 
+check_balance(account_number)) 
+ b3.pack() 
+ b4 = tk.Button(window4, text = "ACCOUNT DETAILS", width = 30, font = "bold", command = lambda: 
+acc_info(account_number)) 
+ b4.pack() 
+ window4.mainloop() 
+def add_money(account_number): 
+ window5 = Tk() 
+ window5.geometry("1200x400") 
+ l1 = tk.Label(window5, text = "Amount-->", width = 30, font = "bold") 
+ l1.grid(row=1, column = 1) 
+ e1 = tk.Entry(window5, width = 30, font = "bold") 
+ e1.grid(row = 1, column = 3) 
+ b1 = tk.Button(window5, text = "Proceed",width = 30, font = "bold", command = lambda: 
+add_money_true(account_number,e1)) 
+ b1.grid(row = 3, column = 2) 
+ window5.mainloop() 
+def add_money_true(account_number,e1): 
+ try: 
+ money = int(e1.get()) 
+ cmd = "update account_data set money = money + {} where account_number = 
+{}".format(money,account_number) 
+ cur.execute(cmd) 
+ con.commit() 
+ messagebox.showinfo("Success","Money has been Credited to your account") 
+ except Exception as e : 
+ messagenbox.showerror("Error","We ran down an Error --> " +str(e)+ " Please Try Again...") 
+def withdraw_money(account_number): 
+ window6 = Tk() 
+ window6.geometry("1200x400") 
+ l1 = tk.Label(window6, text = "Amount-->", width = 30, font = "bold") 
+ l1.grid(row=1, column = 1) 
+ e1 = tk.Entry(window6, width = 30, font = "bold") 
+ e1.grid(row = 1, column = 3) 
+ b1 = tk.Button(window6, text = "Proceed",width = 30, font = "bold", command = lambda: 
+withdraw_money_true(account_number,e1)) 
+ b1.grid(row = 3, column = 2) 
+ window6.mainloop() 
+def withdraw_money_true(account_number,e1): 
+ try: 
+ money = int(e1.get()) 
+ cmd = "update account_data set money = money - {} where account_number = 
+13 
+{}".format(money,account_number) 
+ cur.execute(cmd) 
+ con.commit() 
+ messagebox.showinfo("Success","Money has been Debited from your account") 
+ messagebox.showinfo("Collection","Please collect your money from the cash tray") 
+ except Exception as e : 
+ messagenbox.showerror("Error","We ran down an Error --> " +str(e)+ " Please Try Again...") 
+def check_balance(account_number): 
+ try: 
+ cmd = "select money from account_data where account_number = {}".format(account_number) 
+ cur.execute(cmd) 
+ data = cur.fetchone() 
+ messagebox.showinfo("Success","Your Balance --> " + str(data[0]) + " INR") 
+ except Exception as e: 
+ messagebox.showerror("Error","We ran down an Error --> " +str(e)+ " Please Try Again...") 
+def acc_info(account_number): 
+ try: 
+ cmd = "select * from user where account_number = {}".format(account_number) 
+ cur.execute(cmd) 
+ data = cur.fetchone() 
+ name1 = data[0] 
+ name = "User Name" 
+ password = "Password" 
+ type_ = "Account Type" 
+ money = "Balance" 
+ acc_num = "Acount Number" 
+ password1 = data[2] 
+ type_1 = data[3] 
+ cmd2 = "select * from account_data where account_number = {}".format(account_number) 
+ cur.execute(cmd2) 
+ data1 = cur.fetchone() 
+ money1 = data1[1] 
+ window6 = Tk() 
+ window6.geometry("500x500") 
+ tree = ttk.Treeview(window6, columns=("c1", "c2"), show="headings", height=10) 
+ 
+ 
+ 
+ tree.column("#1",width = 100 ,anchor="center") 
+ tree.heading("#1", text="ACCOUNT") 
+ tree.column("#2",width = 200 ,anchor="center") 
+ tree.heading("#2", text="DETAILS") 
+ tree.insert('','end',text = '1', values =(name,name1)) 
+ tree.insert('','end',text = '2', values =(acc_num,account_number)) 
+14 
+ tree.insert('','end',text = '3', values =(password,password1)) 
+ tree.insert('','end',text = '4', values =(money,money1)) 
+ tree.insert('','end',text = '5', values =(type_,type_1)) 
+ tree.grid(row=1, column=1, columnspan=3, sticky="news") 
+ window6.mainloop() 
+ except Exception as e: 
+ messagebox.showerror("Error","We ran down an Error --> " +str(e)+ " Please Try Again...") 
+ 
+window = Tk() 
+window.geometry("400x400") 
+l1 = tk.Label(window, text = "Welcome to SRM Bank", width = 30, font = "bold") 
+l1.pack() 
+b1 = tk.Button(window, text = "New User", command =lambda:new_user()) 
+b1.pack() 
+b2 = tk.Button(window, text = "Login", command = lambda: login()) 
+b2.pack() 
+window.mainloop()
